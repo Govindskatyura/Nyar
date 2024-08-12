@@ -3,13 +3,7 @@ import { getFirestore, doc, getDoc, collection, query, where, getDocs } from 'fi
 
 const firebaseConfig = {
     // Your Firebase configuration
-    apiKey: "AIzaSyDE7snG6Al2MtCOo9tK7gFHvDUbJefeXjU",
-    authDomain: "nyar-5feb1.firebaseapp.com",
-    projectId: "nyar-5feb1",
-    storageBucket: "nyar-5feb1.appspot.com",
-    messagingSenderId: "610209379755",
-    appId: "1:610209379755:web:a0a2df610c2e5bc68f8eee",
-    measurementId: "G-3553BSK5JL"
+
   };
 
 const app = initializeApp(firebaseConfig);
