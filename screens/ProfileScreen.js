@@ -14,8 +14,10 @@ import { UserType } from '../UserContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { useSelector } from 'react-redux';
 
 const ProfileScreen = () => {
+  const userData = useSelector((state) => state.auth.user);
   const navigation = useNavigation();
   const { userId, setUserId } = useContext(UserType);
   const [user, setUser] = useState(null);
@@ -29,11 +31,11 @@ const ProfileScreen = () => {
     // In a real app, you would fetch this data from your API
     // For this example, we'll use dummy data
     setUser({
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      phone: '+1 (123) 456-7890',
+      name: userData.displayName,
+      email: userData.email,
+      phone: userData.phoneNumber,
       avatar: 'https://randomuser.me/api/portraits/men/1.jpg',
-      totalBalance: 150.75,
+      totalBalance:100,
     });
   };
 

@@ -15,6 +15,10 @@ import { UserType } from "../UserContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import jwt_decode from "jwt-decode";
 import GroupBox from "../components/GroupBox";
+import {auth , database} from "../config/firebase";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { useSelector } from "react-redux";
+
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -24,9 +28,10 @@ const HomeScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [selectedFriends, setSelectedFriends] = useState([]);
+  const userData = useSelector((state) => state.auth.user);
 
-  // Dummy friends data - replace with actual data in a real app
-  const [friends] = useState([
+   // Dummy friends data - replace with actual data in a real app
+   const [friends] = useState([
     { id: 1, name: "John Doe" },
     { id: 2, name: "Jane Smith" },
     { id: 3, name: "Mike Johnson" },
@@ -35,22 +40,35 @@ const HomeScreen = () => {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const token = await AsyncStorage.getItem("authToken");
-      const decodedToken = jwt_decode(token);
-      const userId = decodedToken.userId;
-      setUserId(userId);
+      // const token = await AsyncStorage.getItem("authToken");
+      // const decodedToken = jwt_decode(token);
+      // const userId = decodedToken.userId;
+      setUserId(userData.userId);//(userId);
     };
 
     fetchUser();
-    // Fetch groups data here
-    // For now, we'll use dummy data
-    setGroups([
-      { id: 1, name: "Roommates", totalAmount: 500, owesOrOwns: "Owes you" },
-      { id: 2, name: "Trip to Paris", totalAmount: 200, owesOrOwns: "You owe" },
-      { id: 3, name: "Lunch group", totalAmount: 30, owesOrOwns: "Settled" },
-      // Add more dummy data as needed
-    ]);
-  }, []);
+    const fetchgroups = async ()=> {
+      const userGroupsDoc = await getDoc(doc(database, 'userGroups', userId));
+      const userGroupIds = userGroupsDoc.exists() ? Object.keys(userGroupsDoc.data()) : [];
+    
+      if (userGroupIds.length === 0) {
+        setGroups([]);
+        return;
+      }
+    
+      const groupsQuery = query(collection(database, 'groups'), where('__name__', 'in', userGroupIds));
+      const groupDocsSnapshot = await getDocs(groupsQuery);
+      const groups = groupDocsSnapshot.docs.map(doc => ({ id: doc.id, totalAmount: 500, owesOrOwns: "Owes you", ...doc.data() }));
+      setGroups(groups);
+    }
+    fetchgroups();
+    // setGroups([
+    //   { id: 1, name: "Roommates", totalAmount: 500, owesOrOwns: "Owes you" },
+    //   { id: 2, name: "Trip to Paris", totalAmount: 200, owesOrOwns: "You owe" },
+    //   { id: 3, name: "Lunch group", totalAmount: 30, owesOrOwns: "Settled" },
+    //   // Add more dummy data as needed
+    // ]);
+  }, [groups]);
 
   const filteredGroups = groups.filter(group =>
     group.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -63,7 +81,7 @@ const HomeScreen = () => {
       groupName={item.name}
       totalAmount={item.totalAmount}
       owesOrOwns={item.owesOrOwns}
-      onPress={() => navigation.navigate("Info", { groupId: item.id })}
+      onPress={() => navigation.navigate("Info", { groupId: item.id , groupName: item.name})}
     />
   );
 

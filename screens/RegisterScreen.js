@@ -1,231 +1,209 @@
+import React, { useState } from "react";
 import {
   StyleSheet,
   Text,
   View,
   SafeAreaView,
   Pressable,
-  Image,
   KeyboardAvoidingView,
   TextInput,
   Alert,
+  ScrollView,
 } from "react-native";
-import React, { useState } from "react";
-import { MaterialIcons } from "@expo/vector-icons";
-import { AntDesign } from "@expo/vector-icons";
-import { Ionicons } from "@expo/vector-icons";
+import { MaterialIcons, AntDesign, Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import axios from "axios";
+import { useDispatch } from 'react-redux';
+import { setUser } from '../redux/AuthSlice';
+import { auth, database } from "../config/firebase";
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+// import { useAuth } from '../context/AuthContext'; // Assume you have an auth context
+import { collection,setDoc, doc} from "firebase/firestore";
+
+
 
 const RegisterScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const navigation = useNavigation();
-  const handleRegister = () => {
-    const user = {
-      name: name,
-      email: email,
-      password: password,
-    };
+  const dispatch = useDispatch();
 
-    // send a POST  request to the backend API to register the user
-    axios
-      .post("http://localhost:8000/register", user)
-      .then((response) => {
-        console.log(response);
-        Alert.alert(
-          "Registration successful",
-          "You have been registered Successfully"
-        );
-        setName("");
-        setEmail("");
-        setPassword("");
-      })
-      .catch((error) => {
-        Alert.alert(
-          "Registration Error",
-          "An error occurred while registering"
-        );
-        console.log("registration failed", error);
-      });
+  const handleRegister = async () => {
+    if (name.trim() === "" || email.trim() === "" || password.trim() === "") {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      await updateProfile(user, { displayName: name });
+
+      const userData = {
+        userId: user.uid,
+        email: user.email,
+        displayName: name,
+        phoneNumber: "",
+        profilePictureUrl: "",
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+      };
+
+      const usersRef = collection(database, 'users');
+      const docRef = doc(usersRef, user.uid);
+      await setDoc(docRef, userData);
+
+      dispatch(setUser(userData));
+      navigation.replace("Main");
+    } catch (error) {
+      Alert.alert("Registration Error", error.message);
+      console.log("registration failed", error);
+    }
   };
+
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: "white", alignItems: "center",marginTop:50  }}
-    >
-      <View>
-        <Image
-          style={{ width: 150, height: 100 }}
-          source={{
-            uri: "https://assets.stickpng.com/thumbs/6160562276000b00045a7d97.png",
-          }}
-        />
-      </View>
-
-      <KeyboardAvoidingView>
-        <View style={{ alignItems: "center" }}>
-          <Text
-            style={{
-              fontSize: 17,
-              fontWeight: "bold",
-              marginTop: 12,
-              color: "#041E42",
-            }}
-          >
-            Register to your Account
-          </Text>
-        </View>
-
-        <View style={{ marginTop: 70 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 5,
-              backgroundColor: "#D0D0D0",
-              paddingVertical: 5,
-              borderRadius: 5,
-              marginTop: 30,
-            }}
-          >
-            <Ionicons
-              name="ios-person"
-              size={24}
-              color="gray"
-              style={{ marginLeft: 8 }}
-            />
-            <TextInput
-              value={name}
-              onChangeText={(text) => setName(text)}
-              style={{
-                color: "gray",
-                marginVertical: 10,
-                width: 300,
-                fontSize: name ? 16 : 16,
-              }}
-              placeholder="enter your name"
-            />
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <KeyboardAvoidingView behavior="padding">
+          <View style={styles.header}>
+            <Text style={styles.logo}>Nyar</Text>
+            <Text style={styles.tagline}>Split expenses, not friendships</Text>
           </View>
 
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 5,
-              backgroundColor: "#D0D0D0",
-              paddingVertical: 5,
-              borderRadius: 5,
-              marginTop: 30,
-            }}
-          >
-            <MaterialIcons
-              style={{ marginLeft: 8 }}
-              name="email"
-              size={24}
-              color="gray"
-            />
+          <View style={styles.form}>
+            <Text style={styles.title}>Create your account</Text>
 
-            <TextInput
-              value={email}
-              onChangeText={(text) => setEmail(text)}
-              style={{
-                color: "gray",
-                marginVertical: 10,
-                width: 300,
-                fontSize: password ? 16 : 16,
-              }}
-              placeholder="enter your Email"
-            />
+            <View style={styles.inputContainer}>
+              <Ionicons name="person" size={24} color="#008080" style={styles.icon} />
+              <TextInput
+                value={name}
+                onChangeText={setName}
+                style={styles.input}
+                placeholder="Full Name"
+                placeholderTextColor="#666"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <MaterialIcons name="email" size={24} color="#008080" style={styles.icon} />
+              <TextInput
+                value={email}
+                onChangeText={setEmail}
+                style={styles.input}
+                placeholder="Email Address"
+                placeholderTextColor="#666"
+                keyboardType="email-address"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <AntDesign name="lock1" size={24} color="#008080" style={styles.icon} />
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="#666"
+                secureTextEntry
+              />
+            </View>
+
+            <Pressable style={styles.button} onPress={handleRegister}>
+              <Text style={styles.buttonText}>Register</Text>
+            </Pressable>
+
+            <Pressable onPress={() => navigation.navigate("Login")}>
+              <Text style={styles.loginText}>
+                Already have an account? <Text style={styles.loginLink}>Log In</Text>
+              </Text>
+            </Pressable>
           </View>
-        </View>
-
-        <View>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 5,
-              backgroundColor: "#D0D0D0",
-              paddingVertical: 5,
-              borderRadius: 5,
-              marginTop: 30,
-            }}
-          >
-            <AntDesign
-              name="lock1"
-              size={24}
-              color="gray"
-              style={{ marginLeft: 8 }}
-            />
-
-            <TextInput
-              value={password}
-              onChangeText={(text) => setPassword(text)}
-              secureTextEntry={true}
-              style={{
-                color: "gray",
-                marginVertical: 10,
-                width: 300,
-                fontSize: email ? 16 : 16,
-              }}
-              placeholder="enter your Password"
-            />
-          </View>
-        </View>
-
-        <View
-          style={{
-            marginTop: 12,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <Text>Keep me logged in</Text>
-
-          <Text style={{ color: "#007FFF", fontWeight: "500" }}>
-            Forgot Password
-          </Text>
-        </View>
-
-        <View style={{ marginTop: 80 }} />
-
-        <Pressable
-          onPress={handleRegister}
-          style={{
-            width: 200,
-            backgroundColor: "#FEBE10",
-            borderRadius: 6,
-            marginLeft: "auto",
-            marginRight: "auto",
-            padding: 15,
-          }}
-        >
-          <Text
-            style={{
-              textAlign: "center",
-              color: "white",
-              fontSize: 16,
-              fontWeight: "bold",
-            }}
-          >
-            Register
-          </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={{ marginTop: 15 }}
-        >
-          <Text style={{ textAlign: "center", color: "gray", fontSize: 16 }}>
-            Already have an account? Sign In
-          </Text>
-        </Pressable>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
-export default RegisterScreen;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F0F4F8",
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    padding: 20,
+  },
+  header: {
+    alignItems: "center",
+    marginBottom: 40,
+  },
+  logo: {
+    fontSize: 42,
+    fontWeight: "bold",
+    color: "#008080",
+  },
+  tagline: {
+    fontSize: 16,
+    color: "#666",
+    marginTop: 5,
+  },
+  form: {
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#008080",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#008080",
+    marginBottom: 20,
+  },
+  icon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: "#333",
+    paddingVertical: 10,
+  },
+  button: {
+    backgroundColor: "#008080",
+    borderRadius: 25,
+    paddingVertical: 15,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  loginText: {
+    marginTop: 20,
+    textAlign: "center",
+    color: "#666",
+    fontSize: 16,
+  },
+  loginLink: {
+    color: "#008080",
+    fontWeight: "bold",
+  },
+});
 
-const styles = StyleSheet.create({});
+export default RegisterScreen;
