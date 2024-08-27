@@ -3,19 +3,20 @@ import {
   StyleSheet,
   Text,
   View,
-  FlatList,
   Pressable,
   TextInput,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
-  Image
+  Image,
+  Alert,
+  Modal
 } from 'react-native';
-import { AntDesign, Ionicons, MaterialIcons} from '@expo/vector-icons';
+import { SwipeListView } from 'react-native-swipe-list-view';
+import { AntDesign, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { app as firebase , database } from '../config/firebase'; // Adjust this import based on your Firebase setup
-// import { useAuth } from '../context/AuthContext'; // Assume you have an auth context
-import { collection, addDoc,setDoc, doc, query, where, orderBy, onSnapshot, serverTimestamp } from "firebase/firestore";
+import { app as firebase, database } from '../config/firebase';
+import { collection, addDoc, setDoc, doc, query, where, orderBy, onSnapshot, serverTimestamp, deleteDoc, updateDoc } from "firebase/firestore";
 import { useSelector } from 'react-redux';
 
 const TransactionListScreen = ({ route }) => {
@@ -24,9 +25,14 @@ const TransactionListScreen = ({ route }) => {
   const [newAmount, setNewAmount] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const { groupId, groupName } = route.params;
-  // const { user } = useAuth(); // Assume this hook provides the current user
   const userData = useSelector((state) => state.auth.user);
   const userId = userData.userId;
+
+  // New state for edit modal
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState(null);
+  const [editAmount, setEditAmount] = useState('');
+  const [editDescription, setEditDescription] = useState('');
 
   useEffect(() => {
     if (!groupId) return;
@@ -46,21 +52,21 @@ const TransactionListScreen = ({ route }) => {
 
   const addTransaction = async () => {
     if (newAmount.trim() !== '' && newDescription.trim() !== '') {
-      const timestamp = Date.now(); // Get the current timestamp in milliseconds
-      const transactionId = `${userId}_${timestamp}`; // Generate the custom transaction ID
+      const timestamp = Date.now();
+      const transactionId = `${userId}_${timestamp}`;
 
       const transactionData = {
         transactionId: transactionId,
         type: 'expense',
-        createdBy: userData.displayName, // Use the user ID from props or state
+        createdBy: userData.userId,
         amount: parseFloat(newAmount),
         description: newDescription,
-        category: 'General', // You might want to add a category input
+        category: 'General',
         date: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         groupId: groupId,
-        userId
+        displayName:userData.displayName,
       };
 
       try {
@@ -75,26 +81,58 @@ const TransactionListScreen = ({ route }) => {
     }
   };
 
+  const editTransaction = (transaction) => {
+    setEditingTransaction(transaction);
+    setEditAmount(transaction.amount.toString());
+    setEditDescription(transaction.description);
+    setIsEditModalVisible(true);
+  };
+
+  const updateTransaction = async () => {
+    if (editAmount.trim() !== '' && editDescription.trim() !== '') {
+      try {
+        const transactionRef = doc(database, 'transactions', editingTransaction.id);
+        await updateDoc(transactionRef, {
+          amount: parseFloat(editAmount),
+          description: editDescription,
+          updatedAt: new Date().toISOString()
+        });
+        setIsEditModalVisible(false);
+        setEditingTransaction(null);
+      } catch (error) {
+        console.error("Error updating transaction: ", error);
+      }
+    }
+  };
+
+  const deleteTransaction = async (transactionId) => {
+    try {
+      await deleteDoc(doc(database, 'transactions', transactionId));
+      console.log('Transaction deleted successfully');
+    } catch (error) {
+      console.error("Error deleting transaction: ", error);
+    }
+  };
+
   const goToGroupInfo = () => {
     navigation.navigate('GroupInfoScreen', { groupId, groupName, transactions });
   };
-
+  console.log(transactions);
   const renderHeader = () => (
     <Pressable style={styles.header}>
       <AntDesign onPress={() => navigation.goBack()} name="arrowleft" size={24} color="white" style={styles.backButton} />
-      <Pressable onPress={goToGroupInfo}  style={styles.header_2}>
+      <Pressable onPress={goToGroupInfo} style={styles.header_2}>
         <Image style={styles.groupImage} source={{ uri: 'https://picsum.photos/200' }} />
         <View style={styles.headerInfo}>
           <Text style={styles.groupName}>{groupName}</Text>
-          <Text style={styles.memberCount}>5 members</Text>
+          <Text style={styles.memberCount}>{}</Text>
         </View>
       </Pressable>
     </Pressable>
   );
 
-
   const renderTransaction = ({ item }) => {
-    const isCurrentUserTransaction = item.userId === userId;//user.uid;
+    const isCurrentUserTransaction = item.createdBy === userId;
     return (
       <View style={[
         styles.transactionItem,
@@ -106,12 +144,45 @@ const TransactionListScreen = ({ route }) => {
         ]}>
           <Text style={styles.transactionAmount}>₹{item.amount}</Text>
           <Text style={styles.transactionNote}>{item.description}</Text>
-          <Text style={styles.transactionNote}>{item.createdBy}</Text>
-          <Text style={styles.transactionDate}>
-          {/* {item.createdAt ? item.createdAt.toDate().toLocaleString() : 'Date not available'} */}
-          {item.createdAt}
-          </Text>
+          <Text style={styles.transactionNote}>{item.displayName}</Text>
+          <Text style={styles.transactionDate}>{item.createdAt}</Text>
         </View>
+      </View>
+    );
+  };
+
+  const renderHiddenItem = (data, rowMap) => {
+    if (data.item.createdBy !== userId) return null;
+
+    return (
+      <View style={styles.rowBack}>
+        <Pressable
+          style={[styles.backRightBtn, styles.backRightBtnLeft]}
+          onPress={() => editTransaction(data.item)}
+        >
+          <Text style={styles.backTextWhite}>Edit</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.backRightBtn, styles.backRightBtnRight]}
+          onPress={() => {
+            Alert.alert(
+              "Delete Transaction",
+              "Are you sure you want to delete this transaction?",
+              [
+                {
+                  text: "Cancel",
+                  style: "cancel"
+                },
+                { 
+                  text: "OK", 
+                  onPress: () => deleteTransaction(data.item.id)
+                }
+              ]
+            );
+          }}
+        >
+          <Text style={styles.backTextWhite}>Delete</Text>
+        </Pressable>
       </View>
     );
   };
@@ -124,9 +195,12 @@ const TransactionListScreen = ({ route }) => {
       >
         {renderHeader()}
 
-        <FlatList
+        <SwipeListView
           data={transactions}
           renderItem={renderTransaction}
+          renderHiddenItem={renderHiddenItem}
+          rightOpenValue={-150}
+          disableRightSwipe
           keyExtractor={(item) => item.id}
           style={styles.list}
           inverted
@@ -150,6 +224,46 @@ const TransactionListScreen = ({ route }) => {
             <Ionicons name="send" size={24} color="white" />
           </Pressable>
         </View>
+
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={isEditModalVisible}
+          onRequestClose={() => setIsEditModalVisible(false)}
+        >
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalTitle}>Edit Transaction</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Amount"
+                value={editAmount}
+                onChangeText={setEditAmount}
+                keyboardType="numeric"
+              />
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Description"
+                value={editDescription}
+                onChangeText={setEditDescription}
+              />
+              <View style={styles.modalButtons}>
+                <Pressable
+                  style={[styles.button, styles.buttonCancel]}
+                  onPress={() => setIsEditModalVisible(false)}
+                >
+                  <Text style={styles.textStyle}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.button, styles.buttonUpdate]}
+                  onPress={updateTransaction}
+                >
+                  <Text style={styles.textStyle}>Update</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -170,7 +284,7 @@ const styles = StyleSheet.create({
     padding: 15,
     backgroundColor: '#075E54',
   },
-  header_2:{
+  header_2: {
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -195,12 +309,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
   },
-  headerTitle: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginLeft: 20,
-  },
   list: {
     flex: 1,
   },
@@ -208,7 +316,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     marginVertical: 5,
-    marginHorizontal: 10,
+    marginHorizontal: 10
   },
   transactionContent: {
     backgroundColor: 'white',
@@ -269,6 +377,90 @@ const styles = StyleSheet.create({
   },
   otherUserContent: {
     backgroundColor: 'white',
+  },
+  rowBack: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    right:10,
+    borderRadius:50,
+    justifyContent: 'space-between',
+    // paddingLeft: 15,
+  },
+  backRightBtn: {
+    alignItems: 'center',
+    // bottom: 0,
+    justifyContent: 'center',
+    position: 'absolute',
+    right:50,
+    height:40,
+    width: 75,
+  },
+  backRightBtnLeft: {
+    backgroundColor: 'blue',
+    right: 75,
+  },
+  backRightBtnRight: {
+    backgroundColor: 'red',
+    right: 0,
+  },
+  backTextWhite: {
+    color: '#FFF',
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 22
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5
+  },
+  modalTitle: {
+    marginBottom: 15,
+    textAlign: "center",
+    fontSize: 18,
+    fontWeight: "bold"
+  },
+  modalInput: {
+    height: 40,
+    width: 200,
+    margin: 12,
+    borderWidth: 1,
+    padding: 10,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  button: {
+    borderRadius: 20,
+    padding: 10,
+    elevation: 2
+  },
+  buttonCancel: {
+    backgroundColor: "#2196F3",
+  },
+  buttonUpdate: {
+    backgroundColor: "#2196F3",
+  },
+  textStyle: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center"
   },
 });
 

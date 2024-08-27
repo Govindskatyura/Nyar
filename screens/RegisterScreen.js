@@ -25,6 +25,7 @@ const RegisterScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [phoneNumber, setPhone] = useState("");
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
@@ -44,7 +45,8 @@ const RegisterScreen = () => {
         userId: user.uid,
         email: user.email,
         displayName: name,
-        phoneNumber: "",
+        phoneNumber: phoneNumber,
+        password: password,
         profilePictureUrl: "",
         createdAt: new Date().toISOString(),
         lastLoginAt: new Date().toISOString(),
@@ -94,6 +96,17 @@ const RegisterScreen = () => {
                 placeholder="Email Address"
                 placeholderTextColor="#666"
                 keyboardType="email-address"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <MaterialIcons name="phone" size={24} color="#008080" style={styles.icon} />
+              <TextInput
+                value={phoneNumber}
+                onChangeText={setPhone}
+                style={styles.input}
+                placeholder="phone number"
+                placeholderTextColor="#666"
               />
             </View>
 

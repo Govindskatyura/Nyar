@@ -99,6 +99,7 @@ const ProfileScreen = () => {
           <Image source={{ uri: user.avatar }} style={styles.avatar} />
           <Text style={styles.name}>{user.name}</Text>
           <Text style={styles.email}>{user.email}</Text>
+          <Text style={styles.email}>{user.phone}</Text>
           <TouchableOpacity style={styles.editButton} onPress={navigateToEditProfile}>
             <Text style={styles.editButtonText}>Edit Profile</Text>
           </TouchableOpacity>
