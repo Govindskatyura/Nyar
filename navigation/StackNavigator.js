@@ -9,10 +9,9 @@ import { useSelector } from "react-redux"; // Import Redux hook
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import HomeScreen from "../screens/HomeScreen";
-import ProductInfoScreen from "../screens/ProductInfoScreen";
+import ProductInfoScreen from "../screens/TransactionListScreen";
 import AddAddressScreen from "../screens/AddAddressScreen";
 import AddressScreen from "../screens/AddressScreen";
-import CartScreen from "../screens/CartScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import ConfirmationScreen from "../screens/ConfirmationScreen";
 import ActivityScreen from "../screens/ActivityScreen";

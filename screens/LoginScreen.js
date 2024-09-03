@@ -17,7 +17,8 @@ import { setUser } from '../redux/AuthSlice';
 import { auth, database } from "../config/firebase";
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { ref, get } from 'firebase/database';
-import { collection,getDoc, doc} from "firebase/firestore";
+import { collection, getDoc, doc } from "firebase/firestore";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState("");
@@ -26,6 +27,19 @@ const LoginScreen = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
+    const checkUserSession = async () => {
+      try {
+        const userId = await AsyncStorage.getItem('userId');
+        if (userId) {
+          fetchUserData(userId);
+        }
+      } catch (error) {
+        console.error('Error checking user session:', error);
+      }
+    };
+
+    checkUserSession();
+
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
         fetchUserData(user.uid);
@@ -37,13 +51,13 @@ const LoginScreen = () => {
 
   const fetchUserData = async (userId) => {
     try {
-
       const usersRef = collection(database, 'users');
       const userDoc = doc(usersRef, userId);
       const snapshot = await getDoc(userDoc);
       if (snapshot.exists()) {
         const userData = snapshot.data();
         dispatch(setUser(userData));
+        await AsyncStorage.setItem('userId', userId);  // Save user ID in AsyncStorage
         navigation.replace("Main");
       }
     } catch (error) {

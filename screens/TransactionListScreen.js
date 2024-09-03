@@ -117,7 +117,6 @@ const TransactionListScreen = ({ route }) => {
   const goToGroupInfo = () => {
     navigation.navigate('GroupInfoScreen', { groupId, groupName, transactions });
   };
-  console.log(transactions);
   const renderHeader = () => (
     <Pressable style={styles.header}>
       <AntDesign onPress={() => navigation.goBack()} name="arrowleft" size={24} color="white" style={styles.backButton} />
