@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { randomInt } from 'crypto';
 
 const firebaseConfig = {
 
@@ -24,7 +25,7 @@ async function createUsers() {
       userId,
       email: `user${i + 1}@example.com`,
       displayName: `User ${i + 1}`,
-      phoneNumber: `+1${Math.floor(1000000000 + Math.random() * 9000000000)}`,
+      phoneNumber: `+1${1000000000 + randomInt(9000000000)}`,
       profilePictureUrl: `https://example.com/profile${i + 1}.jpg`,
       createdAt: randomDate(new Date(2020, 0, 1), new Date()).toISOString(),
       lastLoginAt: new Date().toISOString()
