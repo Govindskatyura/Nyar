@@ -11,10 +11,10 @@ import {
 } from 'react-native';
 import * as Contacts from 'expo-contacts';
 import { AntDesign } from '@expo/vector-icons';
-import { getFirestore, doc, setDoc, updateDoc, serverTimestamp, collection } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { useSelector } from 'react-redux';
 import { database } from '../config/firebase';
-
+import * as SMS from 'expo-sms';
 
 const CreateGroupScreen = ({ navigation }) => {
   const [step, setStep] = useState(1);
@@ -23,6 +23,7 @@ const CreateGroupScreen = ({ navigation }) => {
   const [groupName, setGroupName] = useState('');
   const userData = useSelector((state) => state.auth.user);
   const userId = userData.userId;
+
   useEffect(() => {
     (async () => {
       const { status } = await Contacts.requestPermissionsAsync();
@@ -32,11 +33,30 @@ const CreateGroupScreen = ({ navigation }) => {
         });
 
         if (data.length > 0) {
-          setContacts(data);
+          const enrichedContacts = await enrichContactsWithUserData(data);
+          setContacts(enrichedContacts);
         }
       }
     })();
   }, []);
+
+  const enrichContactsWithUserData = async (contactsData) => {
+    const usersRef = collection(database, 'users');
+    const enrichedContacts = await Promise.all(contactsData.map(async (contact) => {
+      const phoneNumber = contact.phoneNumbers && contact.phoneNumbers[0] ? contact.phoneNumbers[0].number : null;
+      if (phoneNumber) {
+        console.log(phoneNumber);
+        const q = query(usersRef, where('phoneNumber', '==', phoneNumber.replace(/\s/g,'')));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+          const userData = querySnapshot.docs[0].data();
+          return { ...contact, userId: querySnapshot.docs[0].id, accountName: userData.displayName };
+        }
+      }
+      return contact;
+    }));
+    return enrichedContacts;
+  };
 
   const toggleContactSelection = (contact) => {
     setSelectedContacts(prevSelected => 
@@ -54,12 +74,28 @@ const CreateGroupScreen = ({ navigation }) => {
       ]}
       onPress={() => toggleContactSelection(item)}
     >
-      <Text>{item.name}</Text>
+      <View>
+        <Text>{item.name}</Text>
+        {item.accountName && (
+          <Text style={styles.accountName}>{item.accountName}</Text>
+        )}
+      </View>
       {selectedContacts.includes(item) && (
         <AntDesign name="check" size={24} color="#008E97" />
       )}
     </TouchableOpacity>
   );
+
+  const inviteUser = async (phoneNumber) => {
+    const isAvailable = await SMS.isAvailableAsync();
+    if (isAvailable) {
+      const inviteLink = 'https://yourappdomain.com/invite'; // Replace with your actual invite link
+      await SMS.sendSMSAsync(phoneNumber, `You're invited to join our Splitwise clone app! Download the app and use this link: ${inviteLink}`);
+      Alert.alert('Invite Sent', 'An SMS invite has been sent to the user');
+    } else {
+      Alert.alert('Error', 'SMS is not available on this device');
+    }
+  };
 
   const createGroup = async () => {
     try {
@@ -68,33 +104,39 @@ const CreateGroupScreen = ({ navigation }) => {
         throw new Error('No user is currently logged in');
       }
 
-      // Generate a new group ID
       const groupId = doc(collection(database, 'groups')).id;
 
-      // Prepare group members data
       const members = {
         [currentUser]: {
           userId: currentUser,
-          displayName:userData.displayName,
+          displayName: userData.displayName,
           role: 'admin',
           joinedAt: serverTimestamp()
         }
       };
 
-      selectedContacts.forEach(contact => {
+      for (const contact of selectedContacts) {
         const phoneNumber = contact.phoneNumbers && contact.phoneNumbers[0] ? contact.phoneNumbers[0].number : null;
-        const name = contact.name; //contact.Name && contact.Name[0] ? contact.Name[0].Name : null;
         if (phoneNumber) {
-          members[phoneNumber] = {
-            userId: phoneNumber, // Using phone number as temporary userId
-            role: 'member',
-            joinedAt: serverTimestamp(),
-            displayName:name,
-          };
+          if (contact.userId) {
+            members[contact.userId] = {
+              userId: contact.userId,
+              role: 'member',
+              joinedAt: serverTimestamp(),
+              displayName: contact.accountName,
+            };
+          } else {
+            await inviteUser(phoneNumber);
+            members[phoneNumber] = {
+              userId: phoneNumber,
+              role: 'invited',
+              invitedAt: serverTimestamp(),
+              displayName: contact.name,
+            };
+          }
         }
-      });
+      }
 
-      // Create group document
       await setDoc(doc(database, 'groups', groupId), {
         groupId,
         name: groupName,
@@ -106,12 +148,16 @@ const CreateGroupScreen = ({ navigation }) => {
         lastTransactionId: ''
       });
 
-      // Update userGroups for the current user
       await setDoc(doc(database, 'userGroups', currentUser), {
         [groupId]: true
       }, { merge: true });
 
-      // Initialize group balances
+      for(const member in members){
+        await setDoc(doc(database, 'userGroups', member), {
+          [groupId]: true
+        }, { merge: true });
+      }
+
       const initialBalances = {};
       Object.keys(members).forEach(userId => {
         initialBalances[userId] = { balance: 0 };
@@ -127,10 +173,6 @@ const CreateGroupScreen = ({ navigation }) => {
   };
 
   const handleNext = () => {
-    // if (step === 1 && selectedContacts.length === 0) {
-    //   Alert.alert('Error', 'Please select at least one contact');
-    //   return;
-    // }
     if (step === 2 && groupName.trim() === '') {
       Alert.alert('Error', 'Please enter a group name');
       return;
@@ -178,7 +220,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F0F4F8',
     padding: 20,
-    margin:10
+    margin: 10
   },
   title: {
     fontSize: 24,
@@ -214,6 +256,11 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  accountName: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
   },
 });
 

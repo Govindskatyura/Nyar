@@ -14,10 +14,12 @@ import { UserType } from '../UserContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
-import { useSelector } from 'react-redux';
+import { useSelector,useDispatch } from 'react-redux';
+import { clearUser } from '../redux/AuthSlice';
 
 const ProfileScreen = () => {
   const userData = useSelector((state) => state.auth.user);
+  const dispatch = useDispatch();
   const navigation = useNavigation();
   const { userId, setUserId } = useContext(UserType);
   const [user, setUser] = useState(null);
@@ -41,11 +43,13 @@ const ProfileScreen = () => {
 
   const handleLogout = async () => {
     try {
-      await AsyncStorage.removeItem('authToken');
+      // await AsyncStorage.removeItem('authToken');
+      await AsyncStorage.removeItem('userId');
       setUserId(null);
+      dispatch(clearUser());
       navigation.reset({
         index: 0,
-        routes: [{ name: 'Login' }],
+        routes: [{ name: 'Home' }],
       });
     } catch (error) {
       console.error('Error logging out:', error);

@@ -31,6 +31,8 @@ const LoginScreen = () => {
       try {
         const userId = await AsyncStorage.getItem('userId');
         if (userId) {
+          console.log(userId);
+          console.log("Searching ////")
           fetchUserData(userId);
         }
       } catch (error) {
@@ -40,13 +42,13 @@ const LoginScreen = () => {
 
     checkUserSession();
 
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        fetchUserData(user.uid);
-      }
-    });
+    // const unsubscribe = auth.onAuthStateChanged((user) => {
+    //   if (user) {
+    //     fetchUserData(user.uid);
+    //   }
+    // });
 
-    return unsubscribe;
+    // return unsubscribe;
   }, []);
 
   const fetchUserData = async (userId) => {
@@ -58,7 +60,10 @@ const LoginScreen = () => {
         const userData = snapshot.data();
         dispatch(setUser(userData));
         await AsyncStorage.setItem('userId', userId);  // Save user ID in AsyncStorage
-        navigation.replace("Main");
+        if (userId){
+          console.log(userId);
+          navigation.replace("Main");
+        }
       }
     } catch (error) {
       console.error("Error fetching user data:", error);

@@ -29,15 +29,7 @@ const HomeScreen = () => {
   const [newGroupName, setNewGroupName] = useState("");
   const [selectedFriends, setSelectedFriends] = useState([]);
   const userData = useSelector((state) => state.auth.user);
-
-   // Dummy friends data - replace with actual data in a real app
-   const [friends] = useState([
-    { id: 1, name: "John Doe" },
-    { id: 2, name: "Jane Smith" },
-    { id: 3, name: "Mike Johnson" },
-    // Add more friends as needed
-  ]);
-
+  
   useEffect(() => {
     const fetchUser = async () => {
       // const token = await AsyncStorage.getItem("authToken");
@@ -62,12 +54,6 @@ const HomeScreen = () => {
       setGroups(groups);
     }
     fetchgroups();
-    // setGroups([
-    //   { id: 1, name: "Roommates", totalAmount: 500, owesOrOwns: "Owes you" },
-    //   { id: 2, name: "Trip to Paris", totalAmount: 200, owesOrOwns: "You owe" },
-    //   { id: 3, name: "Lunch group", totalAmount: 30, owesOrOwns: "Settled" },
-    //   // Add more dummy data as needed
-    // ]);
   }, [groups]);
 
   const filteredGroups = groups.filter(group =>
@@ -148,42 +134,6 @@ const HomeScreen = () => {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create New Group</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Group Name"
-              value={newGroupName}
-              onChangeText={setNewGroupName}
-            />
-            <Text style={styles.subTitle}>Select Friends:</Text>
-            <FlatList
-              data={friends}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.friendItem,
-                    selectedFriends.includes(item.id) && styles.selectedFriend
-                  ]}
-                  onPress={() => toggleFriendSelection(item.id)}
-                >
-                  <Text>{item.name}</Text>
-                </TouchableOpacity>
-              )}
-              keyExtractor={(item) => item.id.toString()}
-            />
-            <TouchableOpacity style={styles.createButton} onPress={createNewGroup}>
-              <Text style={styles.createButtonText}>Create Group</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
       </Modal>
     </SafeAreaView>
   );
