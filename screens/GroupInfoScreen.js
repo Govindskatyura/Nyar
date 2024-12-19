@@ -17,6 +17,7 @@ import { BarChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import { doc,setDoc, getDoc, collection, getDocs, where, query, orderBy, updateDoc, arrayUnion } from 'firebase/firestore';
 import { database as db } from '../config/firebase';  // Adjust according to your Firebase setup
+import { useSelector } from 'react-redux';
 import * as SMS from 'expo-sms';
 
 const GroupInfoScreen = ({ route }) => {
@@ -29,7 +30,11 @@ const GroupInfoScreen = ({ route }) => {
   const [chartData, setChartData] = useState({ labels: [], datasets: [{ data: [] }] });
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
   const [invitePhoneNumber, setInvitePhoneNumber] = useState('');
-
+  const [amount, setAmount] = useState(0); // Add this line to define the amount state
+  const [userBalance, setUserBalance] = useState(0); // New state for user balance
+  const userData = useSelector((state) => state.auth.user);
+  const userId = userData.userId;
+  
   useEffect(() => {
     const fetchGroupData = async () => {
       try {
@@ -47,19 +52,30 @@ const GroupInfoScreen = ({ route }) => {
 
           let expenses = 0;
           let balanceMap = {};
+          let totalAmount = 0; // Add this line to calculate the total amount
+          let userTotalBalance = 0; // New variable to calculate user balance
 
           transactionsSnap.forEach((doc) => {
             const transaction = doc.data();
             expenses += transaction.amount;
+            totalAmount += transaction.amount; // Add this line to accumulate the total amount
 
             if (!balanceMap[transaction.createdBy]) {
               balanceMap[transaction.createdBy] = 0;
             }
             balanceMap[transaction.createdBy] += transaction.amount;
+
+            if (transaction.createdBy === userId) {
+              userTotalBalance += transaction.amount;
+            } else {
+              userTotalBalance -= transaction.amount;
+            }
           });
 
           setTotalExpenses(expenses);
           setBalances(balanceMap);
+          setAmount(totalAmount); // Add this line to set the total amount
+          setUserBalance(userTotalBalance); // Set the user balance
 
           // Prepare data for the chart
           const chartLabels = [];
@@ -166,6 +182,15 @@ const GroupInfoScreen = ({ route }) => {
         <View style={styles.groupInfo}>
           <Image style={styles.groupImage} source={{ uri: 'https://picsum.photos/200' }} />
           <Text style={styles.groupName}>{groupName}</Text>
+          <Text style={[
+            styles.paymentIndicator, 
+            userBalance >= 0 ? styles.paymentPositive : styles.paymentNegative
+          ]}>
+            {userBalance >= 0 
+              ? `You will receive: ₹${Math.abs(userBalance).toFixed(2)}`
+              : `You need to pay: ₹${Math.abs(userBalance).toFixed(2)}`
+            }
+          </Text>
           <Text style={styles.memberCount}>{groupMembers.length} members</Text>
         </View>
 
@@ -387,6 +412,17 @@ const styles = StyleSheet.create({
   },
   inviteButtonText: {
     color: 'white',
+  },
+  paymentIndicator: {
+    fontSize: 14,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  paymentNegative: {
+    color: '#FF0000',
+  },
+  paymentPositive: {
+    color: '#2E8B57',
   },
 });
 

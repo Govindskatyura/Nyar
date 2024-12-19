@@ -34,6 +34,9 @@ const TransactionListScreen = ({ route }) => {
   const [editAmount, setEditAmount] = useState('');
   const [editDescription, setEditDescription] = useState('');
 
+  const [totalAmount, setTotalAmount] = useState(0);
+  const [userBalance, setUserBalance] = useState(0); // New state for user balance
+
   useEffect(() => {
     if (!groupId) return;
 
@@ -46,6 +49,17 @@ const TransactionListScreen = ({ route }) => {
         ...doc.data(),
       }));
       setTransactions(fetchedTransactions);
+
+      // Calculate user balance
+      let balance = 0;
+      fetchedTransactions.forEach((transaction) => {
+        if (transaction.createdBy === userId) {
+          balance += transaction.amount;
+        } else {
+          balance -= transaction.amount;
+        }
+      });
+      setUserBalance(balance);
     });
     return () => unsubscribe();
   }, [groupId]);
@@ -124,7 +138,12 @@ const TransactionListScreen = ({ route }) => {
         <Image style={styles.groupImage} source={{ uri: 'https://picsum.photos/200' }} />
         <View style={styles.headerInfo}>
           <Text style={styles.groupName}>{groupName}</Text>
-          <Text style={styles.memberCount}>{}</Text>
+          <Text style={styles.amountInfo}>
+            {userBalance >= 0 
+              ? `You will receive: ₹${Math.abs(userBalance).toFixed(2)}`
+              : `You need to pay: ₹${Math.abs(userBalance).toFixed(2)}`
+            }
+          </Text>
         </View>
       </Pressable>
     </Pressable>
@@ -305,6 +324,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   memberCount: {
+    color: 'white',
+    fontSize: 14,
+  },
+  amountInfo: {
     color: 'white',
     fontSize: 14,
   },

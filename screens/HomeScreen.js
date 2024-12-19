@@ -60,16 +60,19 @@ const HomeScreen = () => {
     group.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const renderGroupBox = ({ item }) => (
-    <GroupBox
-      key={item.id}
-      imageLink="https://picsum.photos/200"
-      groupName={item.name}
-      totalAmount={item.totalAmount}
-      owesOrOwns={item.owesOrOwns}
-      onPress={() => navigation.navigate("Info", { groupId: item.id , groupName: item.name})}
-    />
-  );
+  const renderGroupBox = ({ item }) => {
+    const userBalance = item.totalAmount; // Assuming totalAmount represents the balance for the user
+    return (
+      <GroupBox
+        key={item.id}
+        imageLink="https://picsum.photos/200"
+        groupName={item.name}
+        totalAmount={userBalance}
+        owesOrOwns={userBalance >= 0 ? "Owes you" : "You owe"}
+        onPress={() => navigation.navigate("Info", { groupId: item.id, groupName: item.name })}
+      />
+    );
+  };
 
   const toggleFriendSelection = (friendId) => {
     setSelectedFriends(prevSelected =>
