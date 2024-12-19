@@ -1,5 +1,4 @@
 import {
-  StyleSheet,
   Text,
   View,
   ScrollView,
@@ -13,6 +12,7 @@ import { Entypo } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import axios from "axios";
 import { UserType } from "../UserContext";
+import styles from '../styles/AddAddressScreenStyles'; // Import styles from a separate file
 
 const AddAddressScreen = () => {
   const navigation = useNavigation();
@@ -43,145 +43,59 @@ const AddAddressScreen = () => {
   console.log("addresses", addresses);
   return (
     <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: 50 }}>
-      <View
-        style={{
-          backgroundColor: "#00CED1",
-          padding: 10,
-          flexDirection: "row",
-          alignItems: "center",
-        }}
-      >
-        <Pressable
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            marginHorizontal: 7,
-            gap: 10,
-            backgroundColor: "white",
-            borderRadius: 3,
-            height: 38,
-            flex: 1,
-          }}
-        >
+      <View style={styles.searchContainer}>
+        <Pressable style={styles.searchInputContainer}>
           <AntDesign
-            style={{ paddingLeft: 10 }}
+            style={styles.searchIcon}
             name="search1"
             size={22}
             color="black"
           />
           <TextInput placeholder="Search Amazon.in" />
         </Pressable>
-
         <Feather name="mic" size={24} color="black" />
       </View>
-
-      <View style={{ padding: 10 }}>
-        <Text style={{ fontSize: 20, fontWeight: "bold" }}>Your Addresses</Text>
-
+      <View style={styles.addressContainer}>
+        <Text style={styles.addressTitle}>Your Addresses</Text>
         <Pressable
           onPress={() => navigation.navigate("Add")}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginTop: 10,
-            borderColor: "#D0D0D0",
-            borderWidth: 1,
-            borderLeftWidth: 0,
-            borderRightWidth: 0,
-            paddingVertical: 7,
-            paddingHorizontal: 5,
-          }}
+          style={styles.addAddressButton}
         >
           <Text>Add a new Address</Text>
           <MaterialIcons name="keyboard-arrow-right" size={24} color="black" />
         </Pressable>
-
         <Pressable>
-          {/* all the added adresses */}
           {addresses?.map((item, index) => (
-            <Pressable
-              style={{
-                borderWidth: 1,
-                borderColor: "#D0D0D0",
-                padding: 10,
-                flexDirection: "column",
-                gap: 5,
-                marginVertical: 10,
-              }}
-            >
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
-              >
-                <Text style={{ fontSize: 15, fontWeight: "bold" }}>
+            <Pressable style={styles.addressItem}>
+              <View style={styles.addressHeader}>
+                <Text style={styles.addressName}>
                   {item?.name}
                 </Text>
                 <Entypo name="location-pin" size={24} color="red" />
               </View>
-
-              <Text style={{ fontSize: 15, color: "#181818" }}>
+              <Text style={styles.addressText}>
                 {item?.houseNo}, {item?.landmark}
               </Text>
-
-              <Text style={{ fontSize: 15, color: "#181818" }}>
+              <Text style={styles.addressText}>
                 {item?.street}
               </Text>
-
-              <Text style={{ fontSize: 15, color: "#181818" }}>
+              <Text style={styles.addressText}>
                 India, Bangalore
               </Text>
-
-              <Text style={{ fontSize: 15, color: "#181818" }}>
+              <Text style={styles.addressText}>
                 phone No : {item?.mobileNo}
               </Text>
-              <Text style={{ fontSize: 15, color: "#181818" }}>
+              <Text style={styles.addressText}>
                 pin code : {item?.postalCode}
               </Text>
-
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 10,
-                  marginTop: 7,
-                }}
-              >
-                <Pressable
-                  style={{
-                    backgroundColor: "#F5F5F5",
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                    borderRadius: 5,
-                    borderWidth: 0.9,
-                    borderColor: "#D0D0D0",
-                  }}
-                >
+              <View style={styles.addressActions}>
+                <Pressable style={styles.addressActionButton}>
                   <Text>Edit</Text>
                 </Pressable>
-
-                <Pressable
-                  style={{
-                    backgroundColor: "#F5F5F5",
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                    borderRadius: 5,
-                    borderWidth: 0.9,
-                    borderColor: "#D0D0D0",
-                  }}
-                >
+                <Pressable style={styles.addressActionButton}>
                   <Text>Remove</Text>
                 </Pressable>
-
-                <Pressable
-                  style={{
-                    backgroundColor: "#F5F5F5",
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                    borderRadius: 5,
-                    borderWidth: 0.9,
-                    borderColor: "#D0D0D0",
-                  }}
-                >
+                <Pressable style={styles.addressActionButton}>
                   <Text>Set as Default</Text>
                 </Pressable>
               </View>
@@ -194,5 +108,3 @@ const AddAddressScreen = () => {
 };
 
 export default AddAddressScreen;
-
-const styles = StyleSheet.create({});

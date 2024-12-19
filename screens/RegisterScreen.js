@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  StyleSheet,
   Text,
   View,
   SafeAreaView,
@@ -16,10 +15,8 @@ import { useDispatch } from 'react-redux';
 import { setUser } from '../redux/AuthSlice';
 import { auth, database } from "../config/firebase";
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-// import { useAuth } from '../context/AuthContext'; // Assume you have an auth context
-import { collection,setDoc, doc} from "firebase/firestore";
-
-
+import { collection, setDoc, doc } from "firebase/firestore";
+import styles from '../styles/RegisterScreenStyles'; // Import styles from a separate file
 
 const RegisterScreen = () => {
   const [email, setEmail] = useState("");
@@ -72,10 +69,8 @@ const RegisterScreen = () => {
             <Text style={styles.logo}>Nyar</Text>
             <Text style={styles.tagline}>Split expenses, not friendships</Text>
           </View>
-
           <View style={styles.form}>
             <Text style={styles.title}>Create your account</Text>
-
             <View style={styles.inputContainer}>
               <Ionicons name="person" size={24} color="#008080" style={styles.icon} />
               <TextInput
@@ -86,7 +81,6 @@ const RegisterScreen = () => {
                 placeholderTextColor="#666"
               />
             </View>
-
             <View style={styles.inputContainer}>
               <MaterialIcons name="email" size={24} color="#008080" style={styles.icon} />
               <TextInput
@@ -98,7 +92,6 @@ const RegisterScreen = () => {
                 keyboardType="email-address"
               />
             </View>
-
             <View style={styles.inputContainer}>
               <MaterialIcons name="phone" size={24} color="#008080" style={styles.icon} />
               <TextInput
@@ -109,7 +102,6 @@ const RegisterScreen = () => {
                 placeholderTextColor="#666"
               />
             </View>
-
             <View style={styles.inputContainer}>
               <AntDesign name="lock1" size={24} color="#008080" style={styles.icon} />
               <TextInput
@@ -121,11 +113,9 @@ const RegisterScreen = () => {
                 secureTextEntry
               />
             </View>
-
             <Pressable style={styles.button} onPress={handleRegister}>
               <Text style={styles.buttonText}>Register</Text>
             </Pressable>
-
             <Pressable onPress={() => navigation.navigate("Login")}>
               <Text style={styles.loginText}>
                 Already have an account? <Text style={styles.loginLink}>Log In</Text>
@@ -137,86 +127,5 @@ const RegisterScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F0F4F8",
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    padding: 20,
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 40,
-  },
-  logo: {
-    fontSize: 42,
-    fontWeight: "bold",
-    color: "#008080",
-  },
-  tagline: {
-    fontSize: 16,
-    color: "#666",
-    marginTop: 5,
-  },
-  form: {
-    backgroundColor: "white",
-    borderRadius: 10,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#008080",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#008080",
-    marginBottom: 20,
-  },
-  icon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: "#333",
-    paddingVertical: 10,
-  },
-  button: {
-    backgroundColor: "#008080",
-    borderRadius: 25,
-    paddingVertical: 15,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  buttonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  loginText: {
-    marginTop: 20,
-    textAlign: "center",
-    color: "#666",
-    fontSize: 16,
-  },
-  loginLink: {
-    color: "#008080",
-    fontWeight: "bold",
-  },
-});
 
 export default RegisterScreen;
